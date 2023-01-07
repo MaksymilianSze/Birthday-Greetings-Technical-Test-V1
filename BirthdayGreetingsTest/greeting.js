@@ -1,19 +1,24 @@
 import { readFileSync } from "fs";
 
-function sendGreetingEmail(firstName, email) {
-  console.log(`Subject: Happy birthday! Happy birthday, dear ${firstName}!`);
+function sendGreetingEmail(birthdayFriends) {
+  const subject = "Happy birthday!";
+  for (const friend of birthdayFriends) { // Loop through the array of friends with a birthday and send an email to each friend
+    const body = `Happy birthday, dear ${friend.firstName}!`;
+    console.log(`Sending email to ${friend.email} with subject: ${subject} and body: ${body}`);
+  }
 }
 
-const textByLine = readFileSync("birthdays.csv").toString().split("\n");
-
-var datetime = new Date();
-console.log(datetime.getDate());
-
-for (let i = 1; i < textByLine.length; i++) {
-  console.log(i);
-  console.log("[" + textByLine[i] + "]");
-
-  const textByComma = textByLine[i].split(",");
-  console.log(textByComma);
-  sendGreetingEmail(textByComma[0]);
+function getTodaysFormattedDate() {
+  const today = new Date();
+  return `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
 }
+
+function getBirthdayFriends(friends) {
+  return friends.filter((friend) => friend.dateOfBirth === getTodaysFormattedDate());
+}
+
+
+const dataContent = readFileSync("birthdays.csv", "utf8").split('\n').slice(1).map(row => {const [lastName, firstName, dateOfBirth, email] = row.split(',').map(s => s.trim()); // Parse the csv and store it as an array of objects and remove the whites spaces with trim()
+return { lastName, firstName, dateOfBirth, email };});
+
+sendGreetingEmail(getBirthdayFriends(dataContent));
