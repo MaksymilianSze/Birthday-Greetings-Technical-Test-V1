@@ -28,7 +28,19 @@ function getTodaysFormattedDate() {
 }
 
 function getBirthdayFriends(friends) {
-  return friends.filter((friend) => friend.dateOfBirth === getTodaysFormattedDate()); // Filter the array of friends and return only the friends with a birthday today
+  const today = getTodaysFormattedDate();
+  if (today.split('/').slice(1).join('/') === "02/28") { // Check if today is Feb 28th and if it is, check if any of the friends have a birthday on Feb 29th
+    return friends.filter((friend) => {
+      if (friend.dateOfBirth.split('/').slice(1).join('/') === '02/29') {
+        return friend;
+      }
+      return friend.dateOfBirth === today;
+    });
+  }
+  else if (today.split('/').slice(1).join('/') === "02/29") { // If today is Feb 29th we don't want to send any greetings because then we would be sending a birthday greeting twice
+    return [];
+  }
+  return friends.filter((friend) => friend.dateOfBirth === today); // Filter the array of friends and return only the friends with a birthday today
 }
 
 
