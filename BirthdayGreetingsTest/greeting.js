@@ -1,24 +1,38 @@
 import { readFileSync } from "fs";
 
-function sendGreetingEmail(birthdayFriends) {
+function useEmailService(email, subject, body) {
+  // TODO: Send email using email service
+}
+
+function useSMSService(phoneNumber, body) {
+  // TODO: Send sms using sms service
+}
+
+function sendGreeting(birthdayFriends, service) {
   const subject = "Happy birthday!";
   for (const friend of birthdayFriends) { // Loop through the array of friends with a birthday and send an email to each friend
     const body = `Happy birthday, dear ${friend.firstName}!`;
-    console.log(`Sending email to ${friend.email} with subject: ${subject} and body: ${body}`);
+    if (service === "email") {
+      useEmailService(friend.email, subject, body);
+      console.log(`Sending email to ${friend.email} with subject: ${subject} and body: ${body}`);
+    } else if (service === "sms") {
+      useSMSService(friend.phoneNumber, body);
+      console.log(`Sending sms to ${friend.email} with body: ${body}`);
+    }
   }
 }
 
 function getTodaysFormattedDate() {
   const today = new Date();
-  return `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
+  return `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`; // Format the date so that it matches the format used in the csv and return it
 }
 
 function getBirthdayFriends(friends) {
-  return friends.filter((friend) => friend.dateOfBirth === getTodaysFormattedDate());
+  return friends.filter((friend) => friend.dateOfBirth === getTodaysFormattedDate()); // Filter the array of friends and return only the friends with a birthday today
 }
 
 
 const dataContent = readFileSync("birthdays.csv", "utf8").split('\n').slice(1).map(row => {const [lastName, firstName, dateOfBirth, email] = row.split(',').map(s => s.trim()); // Parse the csv and store it as an array of objects and remove the whites spaces with trim()
 return { lastName, firstName, dateOfBirth, email };});
 
-sendGreetingEmail(getBirthdayFriends(dataContent));
+sendGreeting(getBirthdayFriends(dataContent), "sms");
