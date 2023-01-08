@@ -1,4 +1,6 @@
 import { readFileSync } from "fs";
+import sqlite3 from "sqlite3";
+const db = new sqlite3.Database('birthdays.db');
 
 function useEmailService(email, subject, body) {
   // TODO: Send email using email service
@@ -17,7 +19,7 @@ function sendGreeting(birthdayFriends, service) {
       console.log(`Sending email to ${friend.email} with subject: ${subject} and body: ${body}`);
     } else if (service === "sms") {
       useSMSService(friend.phoneNumber, body);
-      console.log(`Sending sms to ${friend.email} with body: ${body}`);
+      console.log(`Sending sms to ${friend.phoneNumber} with body: ${body}`); // The data provided doesn't have phone numbers but if it did it would be part of the friend object so for now it will be undefined
     }
   }
 }
@@ -43,8 +45,61 @@ function getBirthdayFriends(friends) {
   return friends.filter((friend) => friend.dateOfBirth === today); // Filter the array of friends and return only the friends with a birthday today
 }
 
+function retrieveAllBirthdaysFromCSV() {
+  return readFileSync("birthdays.csv", "utf8").split('\n').slice(1).map(row => {const [lastName, firstName, dateOfBirth, email] = row.split(',').map(s => s.trim()); // Parse the csv and store it as an array of objects and remove the whites spaces with trim()
+  return { lastName, firstName, dateOfBirth, email };});
+}
 
-const dataContent = readFileSync("birthdays.csv", "utf8").split('\n').slice(1).map(row => {const [lastName, firstName, dateOfBirth, email] = row.split(',').map(s => s.trim()); // Parse the csv and store it as an array of objects and remove the whites spaces with trim()
-return { lastName, firstName, dateOfBirth, email };});
+async function retrieveAllBirthdaysFromDB() { // Get all of the friends from the database so that we can use the previous functions to find which have a birthday today
+  return new Promise((resolve, reject) => {
+    const friends = [];
+    db.each(`SELECT last_name, first_name, date_of_birth, email FROM friends`, (err, row) => {
+      if (err) {
+        reject(err);
+      } else {
+        friends.push({
+          lastName: row.last_name,
+          firstName: row.first_name,
+          dateOfBirth: row.date_of_birth,
+          email: row.email
+        });
+      }
+    }, (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(friends);
+      }
+    });
+  });
+}
 
-sendGreeting(getBirthdayFriends(dataContent), "sms");
+function retrieveBirthdaysFromDB(birthday) { // Because we are using a database we could only retrieve the birthdays of the friends that have a birthday today so we don't have to filter the array like we did with the CSV
+  return new Promise((resolve, reject) => {
+    const friends = [];
+    db.each(`SELECT last_name, first_name, date_of_birth, email FROM friends WHERE substr(date_of_birth, 6) = ?`, birthday, (err, row) => { // Compare only the month and day part
+      if (err) {
+        reject(err);
+      } else {
+        friends.push({
+          lastName: row.last_name,
+          firstName: row.first_name,
+          dateOfBirth: row.date_of_birth,
+          email: row.email
+        });
+      }
+    }, (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(friends);
+      }
+    });
+  });
+}
+
+
+sendGreeting(getBirthdayFriends(retrieveAllBirthdaysFromCSV()), "email"); // Will do nothing unless it is someone's birthday
+sendGreeting(getBirthdayFriends(await retrieveAllBirthdaysFromDB()), "email"); // Will do nothing unless it is someone's birthday
+sendGreeting(await retrieveBirthdaysFromDB(("2023/10/08").split('/').slice(1).join('/')), "email"); // Specify the date and it will send a greeting if there are any birthdays on that date
+
