@@ -49,6 +49,22 @@ function getBirthdayFriends(friends) {
   return friends.filter((friend) => friend.dateOfBirth === today); // Filter the array of friends and return only the friends with a birthday today
 }
 
+function checkLeapDay(friends, birthday) {
+  if (birthday.split("/").slice(1).join("/") === "02/28") {
+    // Check if today is Feb 28th and if it is, check if any of the friends have a birthday on Feb 29th
+    return friends.filter((friend) => {
+      if (friend.dateOfBirth.split("/").slice(1).join("/") === "02/29") {
+        return friend;
+      }
+      return friend.dateOfBirth === birthday;
+    });
+  } else if (birthday.split("/").slice(1).join("/") === "02/29") {
+    // If today is Feb 29th we don't want to send any greetings because then we would be sending a birthday greeting twice
+    return [];
+  }
+  return friends;
+}
+
 function retrieveAllBirthdaysFromCSV() {
   return readFileSync("birthdays.csv", "utf8")
     .split("\n")
@@ -93,7 +109,7 @@ async function retrieveAllBirthdaysFromDB() {
 function retrieveBirthdaysFromDB(birthday) {
   // Because we are using a database we could only retrieve the birthdays of the friends that have a birthday today so we don't have to filter the array like we did with the CSV
   return new Promise((resolve, reject) => {
-    const friends = [];
+    let friends = [];
     db.each(
       `SELECT last_name, first_name, date_of_birth, email FROM friends WHERE substr(date_of_birth, 6) = ?`, // Compare only the month and day part
       birthday,
@@ -113,6 +129,7 @@ function retrieveBirthdaysFromDB(birthday) {
         if (err) {
           reject(err);
         } else {
+          friends = checkLeapDay(friends, birthday);
           resolve(friends);
         }
       }
@@ -123,6 +140,6 @@ function retrieveBirthdaysFromDB(birthday) {
 sendGreeting(getBirthdayFriends(retrieveAllBirthdaysFromCSV()), "email"); // Will do nothing unless it is someone's birthday
 sendGreeting(getBirthdayFriends(await retrieveAllBirthdaysFromDB()), "email"); // Will do nothing unless it is someone's birthday
 sendGreeting(
-  await retrieveBirthdaysFromDB("2023/10/08".split("/").slice(1).join("/")),
+  await retrieveBirthdaysFromDB("1975/09/11".split("/").slice(1).join("/")),
   "email"
 ); // Specify the date and it will send a greeting if there are any birthdays on that date
